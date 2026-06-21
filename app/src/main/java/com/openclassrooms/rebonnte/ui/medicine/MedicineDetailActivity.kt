@@ -15,6 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,12 +26,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -36,19 +44,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.openclassrooms.rebonnte.ui.history.History
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.platform.LocalContext
-import androidx.activity.ComponentActivity
 
 @AndroidEntryPoint
 class MedicineDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val name = intent.getStringExtra("nameMedicine") ?: "Unknown"
-
         setContent {
             RebonnteTheme {
                 val viewModel: MedicineViewModel = hiltViewModel()
@@ -77,40 +78,98 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                     viewModel.deleteMedicine(medicine)
                     showDeleteDialog = false
                     (context as? ComponentActivity)?.finish()
-                }) { Text("Supprimer", color = MaterialTheme.colorScheme.error) }
+                }) {
+                    Text("Supprimer", color = MaterialTheme.colorScheme.error)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Annuler") }
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Annuler")
+                }
             }
         )
     }
 
-    Scaffold(
-        topBar = {
-
-        }
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-
-
+            TextField(
+                value = medicine.name,
+                onValueChange = {},
+                label = { Text("Nom") },
+                enabled = false,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextField(
+                value = medicine.nameAisle,
+                onValueChange = {},
+                label = { Text("Rayon") },
+                enabled = false,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = {
+                        viewModel.updateStock(medicine, medicine.stock - 1, currentUserId)
+                    },
+                    enabled = !isLoading && medicine.stock > 0
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Diminuer le stock"
+                    )
+                }
+                TextField(
+                    value = medicine.stock.toString(),
+                    onValueChange = {},
+                    label = { Text("Stock") },
+                    enabled = false,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        viewModel.updateStock(medicine, medicine.stock + 1, currentUserId)
+                    },
+                    enabled = !isLoading
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Augmenter le stock"
+                    )
+                }
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { showDeleteDialog = true },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
             ) {
                 Text("Supprimer le médicament")
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = "History", style = MaterialTheme.typography.titleLarge)
-
+            Text(text = "Historique", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(medicine.histories) { history ->
+                    HistoryItem(history = history)
+                }
+            }
         }
     }
 }
@@ -125,9 +184,9 @@ fun HistoryItem(history: History) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = history.medicineName, fontWeight = FontWeight.Bold)
-            Text(text = "User: ${history.userId}")
-            Text(text = "Date: ${history.date}")
-            Text(text = "Details: ${history.details}")
+            Text(text = "Utilisateur : ${history.userId}")
+            Text(text = "Date : ${history.date}")
+            Text(text = "Détails : ${history.details}")
         }
     }
 }
