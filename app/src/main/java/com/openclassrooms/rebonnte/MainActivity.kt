@@ -3,22 +3,10 @@ package com.openclassrooms.rebonnte
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.Close
@@ -45,21 +35,15 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -70,51 +54,31 @@ import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.medicine.MedicineScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import android.content.Intent
+import com.google.firebase.auth.FirebaseAuth
+import com.openclassrooms.rebonnte.ui.auth.LoginActivity
 
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    private lateinit var myBroadcastReceiver: MyBroadcastReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainActivity = this
+
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         setContent {
             MyApp()
         }
-        startBroadcastReceiver()
-    }
-
-    private fun startMyBroadcast() {
-        val intent = Intent("com.rebonnte.ACTION_UPDATE")
-        sendBroadcast(intent)
-        startBroadcastReceiver()
-    }
-
-    private fun startBroadcastReceiver() {
-        myBroadcastReceiver = MyBroadcastReceiver()
-        val filter = IntentFilter().apply {
-            addAction("com.rebonnte.ACTION_UPDATE")
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(myBroadcastReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(myBroadcastReceiver, filter)
-        }
-
-        Handler().postDelayed({
-            startMyBroadcast()
-        }, 200)
-    }
-
-
-    class MyBroadcastReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            Toast.makeText(mainActivity, "Update reçu", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    companion object {
-        lateinit var mainActivity: MainActivity
     }
 }
 
@@ -122,8 +86,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MyApp() {
     val navController = rememberNavController()
-    val medicineViewModel: MedicineViewModel = viewModel()
-    val aisleViewModel: AisleViewModel = viewModel()
+    val medicineViewModel: MedicineViewModel = hiltViewModel()
+    val aisleViewModel: AisleViewModel = hiltViewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val route = navBackStackEntry?.destination?.route
 
@@ -137,7 +101,20 @@ fun MyApp() {
                     TopAppBar(
                         title = { if (route == "aisle") Text(text = "Aisle") else Text(text = "Medicines") },
                         actions = {
+                            val context = LocalContext.current
                             var expanded by remember { mutableStateOf(false) }
+
+                            IconButton(onClick = {
+                                FirebaseAuth.getInstance().signOut()
+                                context.startActivity(Intent(context, LoginActivity::class.java))
+                                (context as? ComponentActivity)?.finish()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                                    contentDescription = "Déconnexion"
+                                )
+                            }
+
                             if (currentRoute(navController) == "medicine") {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -202,13 +179,29 @@ fun MyApp() {
                         icon = { Icon(Icons.Default.Home, contentDescription = null) },
                         label = { Text("Aisle") },
                         selected = currentRoute(navController) == "aisle",
-                        onClick = { navController.navigate("aisle") }
+                        onClick = {
+                            navController.navigate("aisle") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.List, contentDescription = null) },
                         label = { Text("Medicine") },
                         selected = currentRoute(navController) == "medicine",
-                        onClick = { navController.navigate("medicine") }
+                        onClick = {
+                            navController.navigate("medicine") {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
                     )
                 }
             },
@@ -227,7 +220,11 @@ fun MyApp() {
             NavHost(
                 modifier = Modifier.padding(it),
                 navController = navController,
-                startDestination = "aisle"
+                startDestination = "aisle",
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None }
             ) {
                 composable("aisle") { AisleScreen(aisleViewModel) }
                 composable("medicine") { MedicineScreen(medicineViewModel) }
