@@ -19,7 +19,10 @@ class MedicineRepository @Inject constructor() : MedicineRepositoryInterface {
 
     override fun getMedicines(): Flow<List<Medicine>> = callbackFlow {
         val listener = collection.addSnapshotListener { snapshot, error ->
-            if (error != null) { close(error); return@addSnapshotListener }
+            if (error != null) {
+                trySend(emptyList())
+                return@addSnapshotListener
+            }
             val medicines = snapshot?.documents?.mapNotNull { doc ->
                 doc.toObject(Medicine::class.java)?.copy(id = doc.id)
             } ?: emptyList()

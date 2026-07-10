@@ -20,9 +20,16 @@ class AisleViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         viewModelScope.launch {
-            repository.getAisles().collect { _aisles.value = it }
+            try {
+                repository.getAisles().collect { _aisles.value = it }
+            } catch (e: Exception) {
+                _error.value = "Erreur de chargement des rayons : ${e.message}"
+            }
         }
     }
 

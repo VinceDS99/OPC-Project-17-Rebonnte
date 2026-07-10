@@ -19,7 +19,7 @@ class MedicineViewModel @Inject constructor(
     private val repository: MedicineRepositoryInterface
 ) : ViewModel() {
 
-    // Source de vérité : alimentée en temps réel par Firestore
+
     private var allMedicines: List<Medicine> = emptyList()
 
     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
@@ -28,11 +28,18 @@ class MedicineViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         viewModelScope.launch {
-            repository.getMedicines().collect {
-                allMedicines = it
-                _medicines.value = it
+            try {
+                repository.getMedicines().collect {
+                    allMedicines = it
+                    _medicines.value = it
+                }
+            } catch (e: Exception) {
+                _error.value = "Erreur de chargement des médicaments : ${e.message}"
             }
         }
     }
@@ -74,7 +81,7 @@ class MedicineViewModel @Inject constructor(
             it.name.lowercase(Locale.getDefault()).contains(query)
         }
     }
-
+    // Tri via firebase
     fun sortByNone() {
         _medicines.value = allMedicines
     }

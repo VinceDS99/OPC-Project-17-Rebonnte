@@ -18,11 +18,13 @@ class AisleRepository @Inject constructor() {
     fun getAisles(): Flow<List<Aisle>> = callbackFlow {
         val listener = collection.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+
+                trySend(emptyList())
                 return@addSnapshotListener
             }
-            val aisles = snapshot?.documents?.mapNotNull { it.toObject(Aisle::class.java) }
-                ?: emptyList()
+            val aisles = snapshot?.documents?.mapNotNull {
+                it.toObject(Aisle::class.java)
+            } ?: emptyList()
             trySend(aisles)
         }
         awaitClose { listener.remove() }

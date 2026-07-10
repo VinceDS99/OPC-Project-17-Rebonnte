@@ -117,6 +117,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 IconButton(
+                    // Modification stock -1
                     onClick = {
                         viewModel.updateStock(medicine, medicine.stock - 1, currentUserEmail)
                     },
@@ -135,6 +136,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(
+                    // Modification stock +1
                     onClick = {
                         viewModel.updateStock(medicine, medicine.stock + 1, currentUserEmail)
                     },
