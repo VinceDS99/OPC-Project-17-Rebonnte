@@ -64,7 +64,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
     val medicines by viewModel.medicines.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val medicine = medicines.find { it.name == name } ?: return
-    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "unknown"
+    val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: "unknown"
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -118,7 +118,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
             ) {
                 IconButton(
                     onClick = {
-                        viewModel.updateStock(medicine, medicine.stock - 1, currentUserId)
+                        viewModel.updateStock(medicine, medicine.stock - 1, currentUserEmail)
                     },
                     enabled = !isLoading && medicine.stock > 0
                 ) {
@@ -136,7 +136,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                 )
                 IconButton(
                     onClick = {
-                        viewModel.updateStock(medicine, medicine.stock + 1, currentUserId)
+                        viewModel.updateStock(medicine, medicine.stock + 1, currentUserEmail)
                     },
                     enabled = !isLoading
                 ) {
@@ -166,7 +166,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
             Text(text = "Historique", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(medicine.histories) { history ->
+                items(medicine.histories.reversed()) { history ->
                     HistoryItem(history = history)
                 }
             }
