@@ -46,6 +46,11 @@
             android:exported="false"
             android:label="@string/app_name" />
 
+        <activity
+            android:name=".ui.medicine.AddMedicineActivity"
+            android:exported="false"
+            android:label="Ajouter un médicament" />
+
     </application>
 
 </manifest>

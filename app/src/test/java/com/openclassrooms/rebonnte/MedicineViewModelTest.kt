@@ -38,41 +38,50 @@ class MedicineViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // T-01 : Ajout d'un médicament
-    @Test
-    fun `addRandomMedicine ajoute un medicament a la liste`() = runTest {
-        val aisles = listOf(Aisle("Rayon A"))
-
-        viewModel.addRandomMedicine(aisles)
+    private suspend fun addTestMedicine(
+        name: String = "Doliprane 1000mg",
+        stock: Int = 10,
+        nameAisle: String = "Rayon A"
+    ) {
+        viewModel.addMedicine(name = name, stock = stock, nameAisle = nameAisle)
         testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    // ─── T-01 : Ajout d'un médicament ─────────────────────────────────────────
+
+    @Test
+    fun `addMedicine ajoute un medicament a la liste`() = runTest {
+        addTestMedicine()
 
         assertEquals(1, viewModel.medicines.value.size)
+        assertEquals("Doliprane 1000mg", viewModel.medicines.value.first().name)
+        assertEquals(10, viewModel.medicines.value.first().stock)
+        assertEquals("Rayon A", viewModel.medicines.value.first().nameAisle)
     }
 
     // T-02 : Modification du stock
     @Test
     fun `updateStock met a jour le stock et cree une entree historique`() = runTest {
-        val aisles = listOf(Aisle("Rayon A"))
-        viewModel.addRandomMedicine(aisles)
-        testDispatcher.scheduler.advanceUntilIdle()
+        addTestMedicine()
 
         val medicine = viewModel.medicines.value.first()
         val newStock = medicine.stock + 1
 
-        viewModel.updateStock(medicine, newStock, "test-user-id")
+        viewModel.updateStock(medicine, newStock, "test@mail.com")
         testDispatcher.scheduler.advanceUntilIdle()
 
         val updated = viewModel.medicines.value.first()
         assertEquals(newStock, updated.stock)
         assertEquals(1, updated.histories.size)
-        assertEquals("test-user-id", updated.histories.first().userId)
+        assertEquals("test@mail.com", updated.histories.first().userId)
+        // Vérifier que le détail est correct
+        assert(updated.histories.first().details.contains("increased"))
     }
 
     // T-03 : Suppression d'un médicament
     @Test
     fun `deleteMedicine supprime le medicament de la liste`() = runTest {
-        val aisles = listOf(Aisle("Rayon A"))
-        viewModel.addRandomMedicine(aisles)
+        addTestMedicine()
         testDispatcher.scheduler.advanceUntilIdle()
 
         val medicine = viewModel.medicines.value.first()

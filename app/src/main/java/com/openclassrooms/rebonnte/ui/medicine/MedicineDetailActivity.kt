@@ -25,10 +25,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.openclassrooms.rebonnte.R
 import com.openclassrooms.rebonnte.ui.history.History
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -66,7 +72,20 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
     val medicine = medicines.find { it.name == name } ?: return
     val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: "unknown"
     val context = LocalContext.current
+    val error by viewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                actionLabel = "OK",
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearError()
+        }
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -90,7 +109,9 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
         )
     }
 
-    Scaffold { paddingValues ->
+    Scaffold (
+        snackbarHost = { SnackbarHost(snackbarHostState)}
+    ){ paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -125,7 +146,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                 ) {
                     Icon(
                         imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Diminuer le stock"
+                        contentDescription = stringResource(R.string.medicine_decrease_stock)
                     )
                 }
                 TextField(
@@ -144,7 +165,7 @@ fun MedicineDetailScreen(name: String, viewModel: MedicineViewModel) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Augmenter le stock"
+                        contentDescription = stringResource(R.string.medicine_increase_stock)
                     )
                 }
                 if (isLoading) {

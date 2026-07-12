@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,54 +19,58 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import dagger.hilt.android.AndroidEntryPoint
 
-class LoginActivity : ComponentActivity() {
+@AndroidEntryPoint
+class RegisterActivity : ComponentActivity() {
+
+    private val viewModel: RegisterViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Déjà connecté ? On saute l'écran de login
-        if (FirebaseAuth.getInstance().currentUser != null) {
-            goToMain()
-            return
-        }
-
         setContent {
             RebonnteTheme {
-                LoginScreen(
-                    onLoginSuccess = { goToMain() },
-                    onNavigateToRegister = {
-                        startActivity(Intent(this, RegisterActivity::class.java))
+                val uiState by viewModel.uiState.collectAsState()
+
+                LaunchedEffect(uiState) {
+                    if (uiState is AuthUiState.Success) {
+                        startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
+                        finish()
                     }
+                }
+
+                RegisterScreen(
+                    uiState = uiState,
+                    onRegister = { email, password -> viewModel.register(email, password) },
+                    onNavigateBack = { finish() }
                 )
             }
         }
     }
-
-    private fun goToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
-    }
 }
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+fun RegisterScreen(
+    uiState: AuthUiState,
+    onRegister: (email: String, password: String) -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    val isLoading = uiState is AuthUiState.Loading
+    val errorMessage = (uiState as? AuthUiState.Error)?.message
 
     Scaffold { paddingValues ->
         Column(
@@ -75,7 +80,7 @@ fun LoginScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Rebonnté", style = MaterialTheme.typography.headlineMedium)
+            Text(text = "Créer un compte", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
@@ -90,7 +95,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Mot de passe") },
+                label = { Text("Mot de passe (6 caractères min.)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
@@ -103,36 +108,36 @@ fun LoginScreen(
             }
 
             Button(
-                onClick = {
-                    if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Email et mot de passe requis"
-                        return@Button
-                    }
-                    isLoading = true
-                    errorMessage = null
-                    FirebaseAuth.getInstance()
-                        .signInWithEmailAndPassword(email, password)
-                        .addOnSuccessListener {
-                            isLoading = false
-                            onLoginSuccess()
-                        }
-                        .addOnFailureListener { exception ->
-                            isLoading = false
-                            errorMessage = exception.localizedMessage ?: "Erreur de connexion"
-                        }
-                },
+                onClick = { onRegister(email, password) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
-                Text(if (isLoading) "Connexion..." else "Se connecter")
+                Text(if (isLoading) "Création…" else "Créer le compte")
             }
 
-            TextButton(
-                onClick = onNavigateToRegister,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Pas de compte ? S'inscrire")
+            TextButton(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
+                Text("Retour à la connexion")
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Register — Idle")
+@Composable
+fun RegisterScreenPreview() {
+    RebonnteTheme {
+        RegisterScreen(uiState = AuthUiState.Idle, onRegister = { _, _ -> }, onNavigateBack = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Register — Erreur")
+@Composable
+fun RegisterScreenErrorPreview() {
+    RebonnteTheme {
+        RegisterScreen(
+            uiState = AuthUiState.Error("Mot de passe de 6 caractères min. requis"),
+            onRegister = { _, _ -> },
+            onNavigateBack = {}
+        )
     }
 }
