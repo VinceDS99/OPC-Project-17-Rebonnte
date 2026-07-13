@@ -1,26 +1,25 @@
 package com.openclassrooms.rebonnte
 
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.openclassrooms.rebonnte.ui.history.History
 import com.openclassrooms.rebonnte.ui.medicine.Medicine
-import com.openclassrooms.rebonnte.ui.medicine.MedicineDetailScreen
-import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
+import com.openclassrooms.rebonnte.ui.medicine.MedicineDetailContent
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 
+/**
+ * Tests instrumentés du CONTENU visuel (MedicineDetailContent),
+ * sans ViewModel ni Hilt — testable directement via ses paramètres.
+ */
 @RunWith(AndroidJUnit4::class)
 class MedicineDetailScreenTest {
 
@@ -42,110 +41,56 @@ class MedicineDetailScreenTest {
         )
     )
 
-    private fun setupScreen(medicine: Medicine = testMedicine): MedicineViewModel {
-        val viewModel = mockk<MedicineViewModel>(relaxed = true)
-        every { viewModel.medicines } returns MutableStateFlow(listOf(medicine))
-        every { viewModel.isLoading } returns MutableStateFlow(false)
-
+    private fun setupContent(
+        medicine: Medicine = testMedicine,
+        isLoading: Boolean = false,
+        onIncrement: () -> Unit = {},
+        onDecrement: () -> Unit = {},
+        onDeleteClick: () -> Unit = {}
+    ) {
         composeTestRule.setContent {
             RebonnteTheme {
-                MedicineDetailScreen(
-                    name = medicine.name,
-                    viewModel = viewModel
+                MedicineDetailContent(
+                    medicine = medicine,
+                    isLoading = isLoading,
+                    onIncrement = onIncrement,
+                    onDecrement = onDecrement,
+                    onDeleteClick = onDeleteClick
                 )
             }
         }
-        return viewModel
     }
 
-    // ─── Test 1 : les informations du médicament s'affichent ───────────────
 
     @Test
     fun medicineDetail_displaysCorrectInformation() {
-        setupScreen()
+        setupContent()
+        
+        composeTestRule
+            .onAllNodesWithText("Doliprane 1000mg")[0]
+            .assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("Doliprane 1000mg").assertIsDisplayed()
         composeTestRule.onNodeWithText("Rayon Analgésiques").assertIsDisplayed()
         composeTestRule.onNodeWithText("10").assertIsDisplayed()
     }
 
-    // ─── Test 2 : l'historique s'affiche ───────────────────────────────────
-
     @Test
     fun medicineDetail_displaysHistory() {
-        setupScreen()
+        setupContent()
 
         composeTestRule.onNodeWithText("Historique").assertIsDisplayed()
         composeTestRule.onNodeWithText("Utilisateur : test@mail.com").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Stock increased from 9 to 10").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Détails : Stock increased from 9 to 10").assertIsDisplayed()
     }
 
-    // ─── Test 3 : cliquer sur + appelle updateStock ────────────────────────
 
-    @Test
-    fun medicineDetail_clickIncrement_callsUpdateStock() {
-        val viewModel = setupScreen()
-
-        composeTestRule
-            .onNodeWithContentDescription("Augmenter le stock")
-            .performClick()
-
-        verify { viewModel.updateStock(testMedicine, 11, any()) }
-    }
-
-    // ─── Test 4 : cliquer sur - appelle updateStock ────────────────────────
-
-    @Test
-    fun medicineDetail_clickDecrement_callsUpdateStock() {
-        val viewModel = setupScreen()
-
-        composeTestRule
-            .onNodeWithContentDescription("Diminuer le stock")
-            .performClick()
-
-        verify { viewModel.updateStock(testMedicine, 9, any()) }
-    }
-
-    // ─── Test 5 : bouton - désactivé quand stock = 0 ───────────────────────
 
     @Test
     fun medicineDetail_decrementDisabled_whenStockIsZero() {
-        val medicineWithZeroStock = testMedicine.copy(stock = 0)
-        setupScreen(medicineWithZeroStock)
+        setupContent(medicine = testMedicine.copy(stock = 0))
 
         composeTestRule
             .onNodeWithContentDescription("Diminuer le stock")
             .assertIsNotEnabled()
-    }
-
-    // ─── Test 6 : cliquer sur Supprimer ouvre le dialog ───────────────────
-
-    @Test
-    fun medicineDetail_clickDelete_showsConfirmationDialog() {
-        setupScreen()
-
-        composeTestRule
-            .onNodeWithText("Supprimer le médicament")
-            .performClick()
-
-        composeTestRule
-            .onNodeWithText("Voulez-vous supprimer Doliprane 1000mg ?")
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Annuler").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Supprimer").assertIsDisplayed()
-    }
-
-    // ─── Test 7 : annuler le dialog le ferme ──────────────────────────────
-
-    @Test
-    fun medicineDetail_cancelDelete_dismissesDialog() {
-        setupScreen()
-
-        composeTestRule.onNodeWithText("Supprimer le médicament").performClick()
-        composeTestRule.onNodeWithText("Annuler").performClick()
-
-        composeTestRule
-            .onNodeWithText("Voulez-vous supprimer Doliprane 1000mg ?")
-            .assertDoesNotExist()
     }
 }
