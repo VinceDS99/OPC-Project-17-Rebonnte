@@ -32,40 +32,52 @@ import androidx.compose.ui.unit.dp
 import com.openclassrooms.rebonnte.MainActivity
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.ui.res.stringResource
+import com.openclassrooms.rebonnte.R
 
 @AndroidEntryPoint
-class RegisterActivity : ComponentActivity() {
+class LoginActivity : ComponentActivity() {
 
-    private val viewModel: RegisterViewModel by viewModels()
+    private val viewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (viewModel.isLoggedIn()) {
+            navigateToMain()
+            return
+        }
+
         setContent {
             RebonnteTheme {
                 val uiState by viewModel.uiState.collectAsState()
 
                 LaunchedEffect(uiState) {
-                    if (uiState is AuthUiState.Success) {
-                        startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
-                        finish()
-                    }
+                    if (uiState is AuthUiState.Success) navigateToMain()
                 }
 
-                RegisterScreen(
+                LoginScreen(
                     uiState = uiState,
-                    onRegister = { email, password -> viewModel.register(email, password) },
-                    onNavigateBack = { finish() }
+                    onSignIn = { email, password -> viewModel.signIn(email, password) },
+                    onNavigateToRegister = {
+                        startActivity(Intent(this, RegisterActivity::class.java))
+                    }
                 )
             }
         }
     }
+
+    private fun navigateToMain() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
+    }
 }
 
 @Composable
-fun RegisterScreen(
+fun LoginScreen(
     uiState: AuthUiState,
-    onRegister: (email: String, password: String) -> Unit,
-    onNavigateBack: () -> Unit
+    onSignIn: (email: String, password: String) -> Unit,
+    onNavigateToRegister: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -80,13 +92,13 @@ fun RegisterScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Créer un compte", style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(R.string.login_title), style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text(stringResource(R.string.login_email)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -95,7 +107,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Mot de passe (6 caractères min.)") },
+                label = { Text(stringResource(R.string.login_password)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation()
@@ -108,36 +120,47 @@ fun RegisterScreen(
             }
 
             Button(
-                onClick = { onRegister(email, password) },
+                onClick = { onSignIn(email, password) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
-                Text(if (isLoading) "Création…" else "Créer le compte")
+                Text(if (isLoading) stringResource(R.string.login_loading) else stringResource(R.string.login_button))
             }
 
-            TextButton(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth()) {
-                Text("Retour à la connexion")
+            TextButton(
+                onClick = onNavigateToRegister,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.login_go_register))
             }
         }
     }
 }
 
-@Preview(showBackground = true, name = "Register — Idle")
+@Preview(showBackground = true, name = "Login — Idle")
 @Composable
-fun RegisterScreenPreview() {
+fun LoginScreenIdlePreview() {
     RebonnteTheme {
-        RegisterScreen(uiState = AuthUiState.Idle, onRegister = { _, _ -> }, onNavigateBack = {})
+        LoginScreen(uiState = AuthUiState.Idle, onSignIn = { _, _ -> }, onNavigateToRegister = {})
     }
 }
 
-@Preview(showBackground = true, name = "Register — Erreur")
+@Preview(showBackground = true, name = "Login — Erreur champs vides")
 @Composable
-fun RegisterScreenErrorPreview() {
+fun LoginScreenErrorPreview() {
     RebonnteTheme {
-        RegisterScreen(
-            uiState = AuthUiState.Error("Mot de passe de 6 caractères min. requis"),
-            onRegister = { _, _ -> },
-            onNavigateBack = {}
+        LoginScreen(
+            uiState = AuthUiState.Error("Email et mot de passe requis"),
+            onSignIn = { _, _ -> },
+            onNavigateToRegister = {}
         )
+    }
+}
+
+@Preview(showBackground = true, name = "Login — Chargement")
+@Composable
+fun LoginScreenLoadingPreview() {
+    RebonnteTheme {
+        LoginScreen(uiState = AuthUiState.Loading, onSignIn = { _, _ -> }, onNavigateToRegister = {})
     }
 }
