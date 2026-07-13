@@ -14,20 +14,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.openclassrooms.rebonnte.R
 
 @Composable
 fun MedicineItem(medicine: Medicine, onClick: () -> Unit) {
+    val arrowDescription = stringResource(R.string.medicine_arrow)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(onClickLabel = arrowDescription) { onClick() }
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
             Text(text = medicine.name, style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Stock : ${medicine.stock}", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = stringResource(R.string.medicine_stock_label, medicine.stock),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
-        Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = "Voir le détail")
+        Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null)
     }
 }
