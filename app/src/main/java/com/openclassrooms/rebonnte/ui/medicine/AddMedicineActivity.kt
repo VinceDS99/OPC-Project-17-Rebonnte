@@ -36,11 +36,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.openclassrooms.rebonnte.ui.aisle.Aisle
+import com.openclassrooms.rebonnte.R
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -82,6 +83,8 @@ fun AddMedicineScreen(
     var dropdownExpanded by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf<String?>(null) }
     var aisleError by remember { mutableStateOf<String?>(null) }
+    val nameRequiredText = stringResource(R.string.add_medicine_error_name)
+    val aisleRequiredText = stringResource(R.string.add_medicine_error_aisle)
 
     // Retour automatique après succès Firestore
     LaunchedEffect(addSuccess) {
@@ -94,12 +97,12 @@ fun AddMedicineScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ajouter un médicament") },
+                title = { Text(stringResource(R.string.add_medicine_title)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
+                            contentDescription = stringResource(R.string.search_back)
                         )
                     }
                 }
@@ -118,7 +121,7 @@ fun AddMedicineScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it; nameError = null },
-                label = { Text("Nom du médicament *") },
+                label = { Text(stringResource(R.string.add_medicine_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = nameError != null,
@@ -134,7 +137,7 @@ fun AddMedicineScreen(
                     // Accepter uniquement des chiffres, max 6 caractères
                     if (it.all { c -> c.isDigit() } && it.length <= 6) stockText = it
                 },
-                label = { Text("Stock initial") },
+                label = { Text(stringResource(R.string.add_medicine_stock)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -149,7 +152,7 @@ fun AddMedicineScreen(
                     value = selectedAisle,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Rayon *") },
+                    label = { Text(stringResource(R.string.add_medicine_aisle)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(dropdownExpanded) },
                     modifier = Modifier
                         .menuAnchor()
@@ -167,7 +170,7 @@ fun AddMedicineScreen(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    "Aucun rayon disponible — créez-en un d'abord",
+                                    stringResource(R.string.add_medicine_no_aisle),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
@@ -196,11 +199,11 @@ fun AddMedicineScreen(
                 onClick = {
                     var valid = true
                     if (name.isBlank()) {
-                        nameError = "Le nom est requis"
+                        nameError = nameRequiredText
                         valid = false
                     }
                     if (selectedAisle.isBlank()) {
-                        aisleError = "Le rayon est requis"
+                        aisleError = aisleRequiredText
                         valid = false
                     }
                     if (valid) {
@@ -221,7 +224,7 @@ fun AddMedicineScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Enregistrer")
+                    Text(stringResource(R.string.add_medicine_save))
                 }
             }
 
@@ -230,13 +233,13 @@ fun AddMedicineScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
-                Text("Annuler")
+                Text(stringResource(R.string.add_medicine_cancel))
             }
         }
     }
 }
 
-// ─── Preview statique (sans ViewModel) ───────────────────────────────────────
+// Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, name = "AddMedicine — Formulaire vide")
 @Composable
