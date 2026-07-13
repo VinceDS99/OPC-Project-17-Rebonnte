@@ -29,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import androidx.compose.ui.res.stringResource
+import com.openclassrooms.rebonnte.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +59,7 @@ fun RebonnteTopBar(
                 IconButton(onClick = onLogout) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = "Déconnexion"
+                        contentDescription = stringResource(R.string.action_logout)
                     )
                 }
 
@@ -72,7 +74,7 @@ fun RebonnteTopBar(
                     ) {
                         Box {
                             IconButton(onClick = { sortMenuExpanded = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "Trier")
+                                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.action_sort))
                             }
                             DropdownMenu(
                                 expanded = sortMenuExpanded,
@@ -80,15 +82,15 @@ fun RebonnteTopBar(
                                 offset = DpOffset(x = 0.dp, y = 0.dp)
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Aucun tri") },
+                                    text = { Text(stringResource(R.string.sort_by_none)) },
                                     onClick = { onSortByNone(); sortMenuExpanded = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Trier par nom") },
+                                    text = { Text(stringResource(R.string.sort_by_name)) },
                                     onClick = { onSortByName(); sortMenuExpanded = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Trier par stock") },
+                                    text = { Text(stringResource(R.string.sort_by_stock)) },
                                     onClick = { onSortByStock(); sortMenuExpanded = false }
                                 )
                             }

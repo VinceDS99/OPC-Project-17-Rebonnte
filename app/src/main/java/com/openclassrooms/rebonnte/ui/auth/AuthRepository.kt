@@ -18,35 +18,49 @@ class AuthRepository @Inject constructor() : AuthRepositoryInterface {
 
     override fun isLoggedIn(): Boolean = auth.currentUser != null
 
-    override suspend fun signIn(email: String, password: String): Result<FirebaseUser> =
-        withContext(Dispatchers.IO) {
-            try {
-                suspendCancellableCoroutine { cont ->
-                    auth.signInWithEmailAndPassword(email, password)
-                        .addOnSuccessListener { cont.resume(Result.success(it.user!!)) }
-                        .addOnFailureListener { e ->
-                            cont.resume(
-                                Result.failure(
-                                    AppException.AuthException(
-                                        e.localizedMessage ?: "Erreur de connexion", e
-                                    )
+    override suspend fun signIn(
+        email: String,
+        password: String
+    ): Result<FirebaseUser> = withContext(Dispatchers.IO) {
+        try {
+            suspendCancellableCoroutine { cont ->
+                auth.signInWithEmailAndPassword(email, password)
+                    .addOnSuccessListener { cont.resume(Result.success(it.user!!)) }
+                    .addOnFailureListener { e ->
+                        cont.resume(
+                            Result.failure(
+                                AppException.AuthException(
+                                    e.localizedMessage ?: "Erreur de connexion", e
                                 )
                             )
-                        }
-                }
-            } catch (e: Exception) {
-                Result.failure(AppException.AuthException("Erreur inattendue lors de la connexion", e))
+                        )
+                    }
             }
+        } catch (e: Exception) {
+            Result.failure(AppException.AuthException("Erreur inattendue lors de la connexion", e))
         }
+    }
 
     override suspend fun register(
         email: String,
         password: String
     ): Result<FirebaseUser> = withContext(Dispatchers.IO) {
-        suspendCancellableCoroutine { cont ->
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener { cont.resume(Result.success(it.user!!)) }
-                .addOnFailureListener { cont.resume(Result.failure(it)) }
+        try {
+            suspendCancellableCoroutine { cont ->
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnSuccessListener { cont.resume(Result.success(it.user!!)) }
+                    .addOnFailureListener { e ->
+                        cont.resume(
+                            Result.failure(
+                                AppException.AuthException(
+                                    e.localizedMessage ?: "Erreur lors de l'inscription", e
+                                )
+                            )
+                        )
+                    }
+            }
+        } catch (e: Exception) {
+            Result.failure(AppException.AuthException("Erreur inattendue lors de l'inscription", e))
         }
     }
 

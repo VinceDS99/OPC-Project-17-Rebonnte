@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import androidx.compose.ui.res.stringResource
+import com.openclassrooms.rebonnte.R
 
 @Composable
 fun EmbeddedSearchBar(
@@ -60,14 +62,14 @@ fun EmbeddedSearchBar(
             IconButton(onClick = { activeChanged(false) }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Retour",
+                    contentDescription = stringResource(R.string.search_back),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
         } else {
             Icon(
                 imageVector = Icons.Rounded.Search,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.search_icon_description),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -85,7 +87,7 @@ fun EmbeddedSearchBar(
             decorationBox = { innerTextField ->
                 if (searchQuery.isEmpty()) {
                     Text(
-                        text = "Rechercher un médicament…",
+                        text = stringResource(R.string.search_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -98,7 +100,7 @@ fun EmbeddedSearchBar(
             IconButton(onClick = { searchQuery = ""; onQueryChange("") }) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
-                    contentDescription = "Effacer la recherche",
+                    contentDescription = stringResource(R.string.search_clear),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

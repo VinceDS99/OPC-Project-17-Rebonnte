@@ -10,14 +10,18 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.openclassrooms.rebonnte.R
 import com.openclassrooms.rebonnte.ui.aisle.AisleScreen
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.main.components.RebonnteBottomBar
@@ -28,13 +32,23 @@ import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 
 @Composable
-fun MainScreen(onLogout: () -> Unit) {
+fun MainScreen(initialTab: String = "aisle", onLogout: () -> Unit) {
     val navController = rememberNavController()
     val medicineViewModel: MedicineViewModel = hiltViewModel()
     val aisleViewModel: AisleViewModel = hiltViewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
+
+    // Navigue vers l'onglet demandé (ex: retour depuis MedicineDetailActivity
+    // après suppression, ou onNewIntent). S'exécute aussi au premier lancement.
+    LaunchedEffect(initialTab) {
+        navController.navigate(initialTab) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     RebonnteTheme {
         Scaffold(
@@ -65,7 +79,7 @@ fun MainScreen(onLogout: () -> Unit) {
                         }
                     }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Ajouter")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fab_add))
                 }
             }
         ) { paddingValues ->

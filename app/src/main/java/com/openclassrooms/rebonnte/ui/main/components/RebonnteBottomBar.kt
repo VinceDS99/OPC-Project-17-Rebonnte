@@ -13,6 +13,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.rememberNavController
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import androidx.compose.ui.res.stringResource
+import com.openclassrooms.rebonnte.R
 
 @Composable
 fun RebonnteBottomBar(
@@ -21,8 +23,8 @@ fun RebonnteBottomBar(
 ) {
     NavigationBar {
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = "Rayons") },
-            label = { Text("Rayons") },
+            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+            label = { Text(stringResource(R.string.nav_aisle)) },
             selected = currentRoute == "aisle",
             onClick = {
                 navController.navigate("aisle") {
@@ -33,8 +35,8 @@ fun RebonnteBottomBar(
             }
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.List, contentDescription = "Médicaments") },
-            label = { Text("Médicaments") },
+            icon = { Icon(Icons.Default.List, contentDescription = null) },
+            label = { Text(stringResource(R.string.nav_medicine)) },
             selected = currentRoute == "medicine",
             onClick = {
                 navController.navigate("medicine") {

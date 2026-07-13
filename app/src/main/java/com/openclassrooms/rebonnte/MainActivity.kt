@@ -4,38 +4,52 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.openclassrooms.rebonnte.ui.auth.AuthRepositoryInterface
+import androidx.activity.viewModels
+import androidx.compose.runtime.mutableStateOf
 import com.openclassrooms.rebonnte.ui.auth.LoginActivity
+import com.openclassrooms.rebonnte.ui.auth.SessionViewModel
 import com.openclassrooms.rebonnte.ui.main.MainScreen
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var authRepository: AuthRepositoryInterface
+    private val sessionViewModel: SessionViewModel by viewModels()
+
+    // État Compose lu par MainScreen — modifiable depuis onNewIntent
+    private val selectedTab = mutableStateOf("aisle")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!authRepository.isLoggedIn()) {
+        if (!sessionViewModel.isLoggedIn()) {
             navigateToLogin()
             return
         }
 
+        selectedTab.value = intent.getStringExtra("selectedTab") ?: "aisle"
+
         setContent {
-            MainScreen(onLogout = {
-                authRepository.signOut()
-                navigateToLogin()
-            })
+            MainScreen(
+                initialTab = selectedTab.value,
+                onLogout = {
+                    sessionViewModel.signOut()
+                    navigateToLogin()
+                }
+            )
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        selectedTab.value = intent.getStringExtra("selectedTab") ?: selectedTab.value
+    }
+
     private fun navigateToLogin() {
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+        val loginIntent = Intent(this, LoginActivity::class.java)
+        loginIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(loginIntent)
         finish()
     }
 }
