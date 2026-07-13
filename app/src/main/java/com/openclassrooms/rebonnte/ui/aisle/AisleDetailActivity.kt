@@ -45,10 +45,11 @@ fun AisleDetailScreen(name: String, viewModel: MedicineViewModel) {
             contentPadding = paddingValues,
             modifier = Modifier.fillMaxSize()
         ) {
-            items(filteredMedicines) { medicine ->
+            items(filteredMedicines, key = { it.id }) { medicine ->
                 MedicineItem(medicine = medicine, onClick = {
                     val intent = Intent(context, MedicineDetailActivity::class.java).apply {
-                        putExtra("nameMedicine", medicine.name)
+                        putExtra("medicineId", medicine.id)
+                        putExtra("openedFrom", "aisle")
                     }
                     context.startActivity(intent)
                 })

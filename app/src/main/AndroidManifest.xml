@@ -19,7 +19,7 @@
 
         <activity
             android:name=".ui.medicine.MedicineDetailActivity"
-            android:theme="@style/Theme.Rebonnte.ActionBar"
+            android:theme="@style/Theme.Rebonnte"
             android:parentActivityName=".MainActivity"
             android:exported="false" />
         <activity
@@ -49,7 +49,7 @@
         <activity
             android:name=".ui.medicine.AddMedicineActivity"
             android:exported="false"
-            android:label="Ajouter un médicament" />
+            android:label="@string/add_medicine_title" />
 
     </application>
 
