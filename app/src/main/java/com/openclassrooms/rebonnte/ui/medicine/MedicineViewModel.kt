@@ -3,10 +3,10 @@ package com.openclassrooms.rebonnte.ui.medicine
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.openclassrooms.rebonnte.ui.aisle.Aisle
 import com.openclassrooms.rebonnte.ui.history.History
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
-import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -26,7 +25,8 @@ class MedicineViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val tag = "MedicineViewModel"
-    // ── Paramètres de requête (tri + filtre)
+
+    // ── Paramètres de requête (tri + filtre + pagination)
     private val _queryParams = MutableStateFlow(MedicineQueryParams())
 
     // ── Liste observée par l'UI
@@ -45,9 +45,12 @@ class MedicineViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // États UI
+    // ── États UI
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -55,9 +58,27 @@ class MedicineViewModel @Inject constructor(
     private val _addSuccess = MutableStateFlow(false)
     val addSuccess: StateFlow<Boolean> = _addSuccess.asStateFlow()
 
-    // Tri via Firestore
+    private val _deleteSuccess = MutableStateFlow(false)
+    val deleteSuccess: StateFlow<Boolean> = _deleteSuccess.asStateFlow()
 
-    /** Ordre Firestore par défaut */
+    // Pagination — charger la page suivante
+    /**
+     * Augmente la taille de page Firestore de 20. Appelé quand l'utilisateur
+     * approche du bas de la LazyColumn (MedicineScreen).
+     */
+    fun loadMore() {
+        if (_isLoadingMore.value) return
+        _isLoadingMore.value = true
+        _queryParams.value = _queryParams.value.copy(
+            pageSize = _queryParams.value.pageSize + 20
+        )
+        viewModelScope.launch {
+            delay(300)
+            _isLoadingMore.value = false
+        }
+    }
+
+    // Tri Firestore
     fun sortByNone() {
         _queryParams.value = _queryParams.value.copy(
             sortField = MedicineSortField.NONE,
@@ -65,7 +86,6 @@ class MedicineViewModel @Inject constructor(
         )
     }
 
-    /** Tri par Nom  */
     fun sortByName() {
         _queryParams.value = _queryParams.value.copy(
             sortField = MedicineSortField.NAME,
@@ -73,7 +93,6 @@ class MedicineViewModel @Inject constructor(
         )
     }
 
-    /** Tri par stock croissant  */
     fun sortByStock() {
         _queryParams.value = _queryParams.value.copy(
             sortField = MedicineSortField.STOCK,
@@ -82,7 +101,6 @@ class MedicineViewModel @Inject constructor(
     }
 
     // Filtrage via Firestore
-
     fun filterByName(name: String) {
         _queryParams.value = _queryParams.value.copy(
             nameFilter = name.lowercase().trim(),
@@ -90,16 +108,17 @@ class MedicineViewModel @Inject constructor(
         )
     }
 
-    // Opérations CRUD
-
+    // CRUD
     fun addMedicine(name: String, stock: Int, nameAisle: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
+                val trimmedName = name.trim()
                 repository.addMedicine(
                     Medicine(
-                        name = name.trim(),
+                        name = trimmedName,
+                        nameLower = trimmedName.lowercase(),
                         stock = stock,
                         nameAisle = nameAisle,
                         histories = emptyList()
@@ -115,7 +134,7 @@ class MedicineViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun updateStock(medicine: Medicine, newStock: Int, userEmail: String) {
         if (newStock < 0) {
             _error.value = "Le stock ne peut pas être négatif"
@@ -155,12 +174,10 @@ class MedicineViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                _error.value = null
                 repository.deleteMedicine(medicine.id)
-                Log.d(tag, "Médicament '${medicine.name}' supprimé")
+                _deleteSuccess.value = true
             } catch (e: Exception) {
-                Log.e(tag, "Erreur suppression médicament", e)
-                _error.value = "Erreur lors de la suppression de '${medicine.name}' : ${e.message}"
+                _error.value = "Erreur lors de la suppression : ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -169,4 +186,5 @@ class MedicineViewModel @Inject constructor(
 
     fun clearError() { _error.value = null }
     fun resetAddSuccess() { _addSuccess.value = false }
+    fun resetDeleteSuccess() { _deleteSuccess.value = false }
 }

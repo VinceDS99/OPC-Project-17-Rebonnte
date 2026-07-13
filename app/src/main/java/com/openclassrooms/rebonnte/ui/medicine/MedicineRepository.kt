@@ -25,32 +25,30 @@ class MedicineRepository @Inject constructor() : MedicineRepositoryInterface {
         params: MedicineQueryParams
     ): Flow<List<Medicine>> = callbackFlow {
 
-        // Construction de la requête Firestore selon les params
+        // Construction de la requête Firestore selon tri/filtrage/pagination.
+        // .limit(pageSize) = PAGINATION : Firestore n'envoie que N documents,
         val query: Query = when {
-            // Filtrage par préfixe (priorité sur le tri)
             params.nameFilter.isNotBlank() -> {
                 val filterLower = params.nameFilter.lowercase()
+                // Recherche par préfixe insensible à la casse via le champ "nameLower"
                 collection
-                    .orderBy("name")
+                    .orderBy("nameLower")
                     .startAt(filterLower)
                     .endAt(filterLower + "\uf8ff")
+                    .limit(params.pageSize.toLong())
             }
-            // Tri par nom côté serveur
             params.sortField == MedicineSortField.NAME -> {
-                collection.orderBy("name")
+                collection.orderBy("nameLower").limit(params.pageSize.toLong())
             }
-            // Tri par stock côté serveur
             params.sortField == MedicineSortField.STOCK -> {
-                collection.orderBy("stock")
+                collection.orderBy("stock").limit(params.pageSize.toLong())
             }
-            // Pas de tri — ordre Firestore par défaut
-            else -> collection
+            else -> collection.limit(params.pageSize.toLong())
         }
 
         val listener = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 Log.w(tag, "getMedicines listener error", error)
-                // On envoie une liste vide plutôt que de crasher
                 trySend(emptyList())
                 return@addSnapshotListener
             }
@@ -59,13 +57,12 @@ class MedicineRepository @Inject constructor() : MedicineRepositoryInterface {
                     doc.toObject(Medicine::class.java)?.copy(id = doc.id)
                 } catch (e: Exception) {
                     Log.e(tag, "Erreur désérialisation document ${doc.id}", e)
-                    null // le document malformé est ignoré, les autres passent
+                    null
                 }
             } ?: emptyList()
             trySend(medicines)
         }
 
-        // Libère le listener quand le Flow est annulé (ViewModel détruit)
         awaitClose {
             Log.d(tag, "Listener Firestore libéré")
             listener.remove()
@@ -75,7 +72,8 @@ class MedicineRepository @Inject constructor() : MedicineRepositoryInterface {
     override suspend fun addMedicine(medicine: Medicine) = withContext(Dispatchers.IO) {
         try {
             suspendCancellableCoroutine<Unit> { cont ->
-                collection.add(medicine)
+                val medicineToSave = medicine.copy(nameLower = medicine.name.lowercase())
+                collection.add(medicineToSave)
                     .addOnSuccessListener {
                         Log.d(tag, "Médicament ajouté : ${medicine.name}")
                         cont.resume(Unit)
