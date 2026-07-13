@@ -7,8 +7,6 @@
     <string name="nav_medicine">Médicaments</string>
 
     <!-- TopAppBar -->
-    <string name="title_aisle">Rayons</string>
-    <string name="title_medicines">Médicaments</string>
     <string name="action_logout">Déconnexion</string>
     <string name="action_sort">Trier</string>
     <string name="sort_by_none">Aucun tri</string>
@@ -19,6 +17,7 @@
     <string name="search_placeholder">Rechercher un médicament…</string>
     <string name="search_back">Retour</string>
     <string name="search_clear">Effacer la recherche</string>
+    <string name="search_icon_description">Rechercher</string>
 
     <!-- FAB -->
     <string name="fab_add">Ajouter</string>
@@ -29,8 +28,6 @@
     <string name="login_password">Mot de passe</string>
     <string name="login_button">Se connecter</string>
     <string name="login_loading">Connexion…</string>
-    <string name="login_error_empty">Email et mot de passe requis</string>
-    <string name="login_error_generic">Erreur de connexion</string>
     <string name="login_go_register">Pas de compte ? S\'inscrire</string>
 
     <!-- Register -->
@@ -39,8 +36,6 @@
     <string name="register_password">Mot de passe (6 caractères min.)</string>
     <string name="register_button">Créer le compte</string>
     <string name="register_loading">Création…</string>
-    <string name="register_error_invalid">Email valide et mot de passe de 6 caractères min. requis</string>
-    <string name="register_error_generic">Erreur lors de l\'inscription</string>
     <string name="register_go_login">Retour à la connexion</string>
 
     <!-- Aisle list -->
@@ -56,7 +51,6 @@
     <string name="medicine_field_stock">Stock</string>
     <string name="medicine_decrease_stock">Diminuer le stock</string>
     <string name="medicine_increase_stock">Augmenter le stock</string>
-    <string name="medicine_loading">Mise à jour en cours</string>
     <string name="medicine_history_title">Historique</string>
     <string name="medicine_history_user">Utilisateur : %s</string>
     <string name="medicine_history_date">Date : %s</string>
@@ -74,12 +68,9 @@
     <string name="add_medicine_name">Nom du médicament *</string>
     <string name="add_medicine_stock">Stock initial</string>
     <string name="add_medicine_aisle">Rayon *</string>
+    <string name="add_medicine_no_aisle">Aucun rayon disponible — créez-en un d\'abord</string>
     <string name="add_medicine_save">Enregistrer</string>
     <string name="add_medicine_cancel">Annuler</string>
     <string name="add_medicine_error_name">Le nom est requis</string>
     <string name="add_medicine_error_aisle">Le rayon est requis</string>
-
-    <!-- Errors -->
-    <string name="error_loading_aisles">Erreur de chargement des rayons</string>
-    <string name="error_loading_medicines">Erreur de chargement des médicaments</string>
 </resources>
