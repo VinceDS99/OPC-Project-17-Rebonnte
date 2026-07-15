@@ -73,4 +73,7 @@
     <string name="add_medicine_cancel">Annuler</string>
     <string name="add_medicine_error_name">Le nom est requis</string>
     <string name="add_medicine_error_aisle">Le rayon est requis</string>
+
+    <!-- Erreurs génériques -->
+    <string name="action_retry">Réessayer</string>
 </resources>

@@ -26,6 +26,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -34,6 +39,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -45,6 +51,7 @@ import com.openclassrooms.rebonnte.R
 import com.openclassrooms.rebonnte.ui.aisle.AisleViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class AddMedicineActivity : ComponentActivity() {
@@ -76,6 +83,7 @@ fun AddMedicineScreen(
     val aisles by aisleViewModel.aisles.collectAsState()
     val isLoading by medicineViewModel.isLoading.collectAsState()
     val addSuccess by medicineViewModel.addSuccess.collectAsState()
+    val error by medicineViewModel.error.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var stockText by remember { mutableStateOf("0") }
@@ -85,6 +93,10 @@ fun AddMedicineScreen(
     var aisleError by remember { mutableStateOf<String?>(null) }
     val nameRequiredText = stringResource(R.string.add_medicine_error_name)
     val aisleRequiredText = stringResource(R.string.add_medicine_error_aisle)
+    val retryText = stringResource(R.string.action_retry)
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     // Retour automatique après succès Firestore
     LaunchedEffect(addSuccess) {
@@ -94,7 +106,32 @@ fun AddMedicineScreen(
         }
     }
 
+
+    LaunchedEffect(error) {
+        val message = error ?: return@LaunchedEffect
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = retryText,
+                duration = SnackbarDuration.Long
+            )
+            medicineViewModel.clearError()
+            if (result == SnackbarResult.ActionPerformed) {
+                medicineViewModel.addMedicine(
+                    name = name.trim(),
+                    stock = stockText.toIntOrNull() ?: 0,
+                    nameAisle = selectedAisle
+                )
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.add_medicine_title)) },

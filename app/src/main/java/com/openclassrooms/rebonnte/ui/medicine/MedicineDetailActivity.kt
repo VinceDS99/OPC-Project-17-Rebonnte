@@ -31,6 +31,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -41,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +61,7 @@ import com.openclassrooms.rebonnte.ui.auth.SessionViewModel
 import com.openclassrooms.rebonnte.ui.history.History
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MedicineDetailActivity : ComponentActivity() {
@@ -92,8 +98,20 @@ fun MedicineDetailScreen(
     val medicine = medicines.find { it.id == medicineId }
     val isLoading by viewModel.isLoading.collectAsState()
     val deleteSuccess by viewModel.deleteSuccess.collectAsState()
+    val error by viewModel.error.collectAsState()
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(error) {
+        val message = error ?: return@LaunchedEffect
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+            viewModel.clearError()
+        }
+    }
 
     // Distingue "en cours de premier chargement" de "réellement supprimé".
     // Sans ça, medicine == null au tout premier rendu (avant la réponse
@@ -165,6 +183,11 @@ fun MedicineDetailScreen(
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(snackbarData = data)
+            }
+        },
         topBar = {
             TopAppBar(
                 title = { Text(medicine.name) },

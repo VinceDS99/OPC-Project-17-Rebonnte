@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,6 @@ class AisleViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-
     val aisles: StateFlow<List<Aisle>> = repository.getAisles()
         .catch { e ->
             Log.e(tag, "Erreur chargement rayons", e)
@@ -45,9 +45,11 @@ class AisleViewModel @Inject constructor(
                 _isLoading.value = true
                 _error.value = null
                 repository.addAisle(Aisle("Aisle ${aisles.value.size + 1}"))
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(tag, "Erreur ajout rayon", e)
-                _error.value = "Erreur lors de l'ajout du rayon : ${e.message}"
+                _error.value = e.message ?: "Erreur lors de l'ajout du rayon"
             } finally {
                 _isLoading.value = false
             }

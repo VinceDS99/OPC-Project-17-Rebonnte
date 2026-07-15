@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openclassrooms.rebonnte.ui.history.History
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -126,9 +127,11 @@ class MedicineViewModel @Inject constructor(
                 )
                 _addSuccess.value = true
                 Log.d(tag, "Médicament '$name' ajouté avec succès")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(tag, "Erreur ajout médicament", e)
-                _error.value = "Erreur lors de l'ajout de '$name' : ${e.message}"
+                _error.value = e.message ?: "Erreur lors de l'ajout de '$name'"
             } finally {
                 _isLoading.value = false
             }
@@ -157,9 +160,11 @@ class MedicineViewModel @Inject constructor(
                 )
                 repository.updateStockAndHistory(medicine.id, newStock, history)
                 Log.d(tag, "Stock '${medicine.name}' : ${medicine.stock} → $newStock")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(tag, "Erreur mise à jour stock", e)
-                _error.value = "Erreur lors de la mise à jour du stock : ${e.message}"
+                _error.value = e.message ?: "Erreur lors de la mise à jour du stock"
             } finally {
                 _isLoading.value = false
             }
@@ -174,10 +179,14 @@ class MedicineViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
+                _error.value = null
                 repository.deleteMedicine(medicine.id)
                 _deleteSuccess.value = true
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _error.value = "Erreur lors de la suppression : ${e.message}"
+                Log.e(tag, "Erreur suppression médicament", e)
+                _error.value = e.message ?: "Erreur lors de la suppression"
             } finally {
                 _isLoading.value = false
             }

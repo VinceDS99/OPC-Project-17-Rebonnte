@@ -9,9 +9,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -30,6 +37,7 @@ import com.openclassrooms.rebonnte.ui.medicine.AddMedicineActivity
 import com.openclassrooms.rebonnte.ui.medicine.MedicineScreen
 import com.openclassrooms.rebonnte.ui.medicine.MedicineViewModel
 import com.openclassrooms.rebonnte.ui.theme.RebonnteTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(initialTab: String = "aisle", onLogout: () -> Unit) {
@@ -40,8 +48,12 @@ fun MainScreen(initialTab: String = "aisle", onLogout: () -> Unit) {
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
 
-    // Navigue vers l'onglet demandé (ex: retour depuis MedicineDetailActivity
-    // après suppression, ou onNewIntent). S'exécute aussi au premier lancement.
+    val aisleError by aisleViewModel.error.collectAsState()
+    val medicineError by medicineViewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Navigue vers l'onglet demandé
     LaunchedEffect(initialTab) {
         navController.navigate(initialTab) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -50,8 +62,31 @@ fun MainScreen(initialTab: String = "aisle", onLogout: () -> Unit) {
         }
     }
 
+    // Erreur d'ajout de rayon (FAB sur l'onglet Rayons), ex: timeout réseau.
+    LaunchedEffect(aisleError) {
+        val message = aisleError ?: return@LaunchedEffect
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+            aisleViewModel.clearError()
+        }
+    }
+
+    // Erreur de chargement de la liste des médicaments (listener Firestore).
+    LaunchedEffect(medicineError) {
+        val message = medicineError ?: return@LaunchedEffect
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+            medicineViewModel.clearError()
+        }
+    }
+
     RebonnteTheme {
         Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    Snackbar(snackbarData = data)
+                }
+            },
             topBar = {
                 RebonnteTopBar(
                     currentRoute = currentRoute,
